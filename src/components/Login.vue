@@ -64,7 +64,6 @@ export default {
       this.$refs.loginFormRef.validate( async (valid)=>{
         if (!valid) return
        const {data:result}= await this.$http.post('login',this.loginForm)
-        console.log(result)
         if (result.meta.status!==200) return this.$message.error('登录失败')
         this.$message.success('登录成功')
         //将登录成功之后的token保存到客户端sessionStorage中
