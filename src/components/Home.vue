@@ -17,6 +17,7 @@
           :router="true"
           :collapse="isCllapse"
           :collapse-transition="false"
+          :default-active="activePath"
           unique-opened
           active-text-color="#ffd04b"
           background-color="#373d41"
@@ -29,7 +30,8 @@
               <span>{{item.authName}}</span>
             </template>
             <!-- 二级菜单-->
-            <el-menu-item :index="'/'+subItem.path" v-for="subItem in item.children" :key="subItem.id">
+            <el-menu-item :index="'/'+subItem.path" v-for="subItem in item.children" :key="subItem.id"
+                          @click="saveActivePath('/'+subItem.path)">
               <i class="el-icon-menu"></i>
               <span>{{subItem.authName}}</span>
             </el-menu-item>
@@ -61,11 +63,14 @@ export default {
         '102':'iconfont icon-calculator',
         '145':'iconfont icon-feeds'
       },
-      isCllapse:false
+      isCllapse:false,
+      //被激活的链接地址
+      activePath:''
     }
   },
   created() {
     this.getMenuList()
+    this.activePath=window.sessionStorage.getItem('activePath')
   },
   methods: {
     //退出登录函数
@@ -76,13 +81,17 @@ export default {
     //获取所有菜单
     async getMenuList () {
      const {data:res}=await this.$http.get('menus')
-      console.log(res)
       if (res.meta.status!==200) return this.$message.error('获取数据失败')
       this.menulist=res.data
     },
     //侧边栏的折叠与展开
     toggleCollapse (){
       this.isCllapse=!this.isCllapse
+    },
+    //保存激活路径
+    saveActivePath (activePath){
+      window.sessionStorage.setItem('activePath',activePath)
+      this.activePath=activePath
     }
   }
 }
