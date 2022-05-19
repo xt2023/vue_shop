@@ -13,13 +13,13 @@
       <!--      搜索区域-->
       <el-row :gutter="20">
         <el-col :span="8">
-          <el-input placeholder="请输入内容" v-model="queryInfo.query" clearable @clear="getUsersList">
+          <el-input v-model="queryInfo.query" clearable placeholder="请输入内容" @clear="getUsersList">
             <el-button slot="append" icon="el-icon-search" @click="getUsersList"></el-button>
           </el-input>
         </el-col>
         <!--  按钮区域-->
         <el-col :span="4">
-          <el-button type="primary">添加用户</el-button>
+          <el-button type="primary" @click="addDialogVisible=true">添加用户</el-button>
         </el-col>
       </el-row>
 
@@ -37,8 +37,8 @@
         <el-table-column label="状态" prop="mg_state">
           <template slot-scope="scope">
             <el-switch
-              @change="userStsteChange(scope.row)"
-              v-model="scope.row.mg_state">
+              v-model="scope.row.mg_state"
+              @change="userStsteChange(scope.row)">
             </el-switch>
           </template>
         </el-table-column>
@@ -59,15 +59,42 @@
 
       <!--      页码区域-->
       <el-pagination
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
         :current-page="queryInfo.pagenum"
-        :page-sizes="[1, 3, 5, 9]"
         :page-size="queryInfo.pagesize"
+        :page-sizes="[1, 3, 5, 9]"
+        :total="total"
         layout="total, sizes, prev, pager, next, jumper"
-        :total="total">
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange">
       </el-pagination>
     </el-card>
+    <!--    对话框区域-->
+    <el-dialog
+      :visible.sync="addDialogVisible"
+      @close="addDialogClose"
+      title="提示"
+      width="50%">
+      <!--      内容主体区域-->
+      <el-form ref="addFormRef" :model="addForm" :rules="addFormRules" label-width="100px">
+        <el-form-item label="用户名" prop="username">
+          <el-input v-model="addForm.username"></el-input>
+        </el-form-item>
+        <el-form-item label="密码" prop="password">
+          <el-input v-model="addForm.password"></el-input>
+        </el-form-item>
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="addForm.email"></el-input>
+        </el-form-item>
+        <el-form-item label="手机号" prop="mobile">
+          <el-input v-model="addForm.mobile"></el-input>
+        </el-form-item>
+
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+    <el-button @click="addDialogVisible = false">取 消</el-button>
+    <el-button type="primary" @click="addUser">确 定</el-button>
+  </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -75,6 +102,25 @@
 export default {
   name: "users",
   data() {
+    //验证邮箱
+    var checkEmail = (rule, value, cb) => {
+      const regEmail = /^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/
+      if (regEmail.test(value)) {
+        //合法邮箱
+        return cb()
+      } else {
+        cb(new Error('请输入合法邮箱'))
+      }
+    }
+    var checkMoblie = (rule, value, cb) => {
+      const regMoblie = /^1(3\d|4[5-9]|5[0-35-9]|6[567]|7[0-8]|8\d|9[0-35-9])\d{8}$/
+      if (regMoblie.test(value)) {
+        //合法邮箱
+        return cb()
+      } else {
+        cb(new Error('请输入合法手机'))
+      }
+    }
     return {
       queryInfo: {
         query: '',
@@ -82,7 +128,39 @@ export default {
         pagesize: 1
       },
       userList: [],
-      total: 0
+      total: 0,
+      //控制对话框
+      addDialogVisible: false,
+      //添加用户表单数据
+      addForm: {
+        username: '',
+        password: '',
+        email: '',
+        mobile: ''
+      },
+      //添加用户表单验证规则对象
+      addFormRules: {
+        //表单验证规则
+        username: [
+          {required: true, message: '请输入用户名称', trigger: 'blur'},
+          {min: 2, max: 8, message: '长度在 2 到 8 个字符', trigger: 'blur'}
+        ],
+        password: [
+          {required: true, message: '请输入密码', trigger: 'blur'},
+          {min: 6, max: 15, message: '长度在 6到 15 个字符', trigger: 'blur'}
+        ],
+        email: [
+          {required: true, message: '请输入邮箱', trigger: 'blur'},
+          {min: 3, max: 15, message: '长度在 3到 15 个字符', trigger: 'blur'},
+          { validator: checkEmail, trigger: 'blur' }
+        ],
+        mobile: [
+          {required: true, message: '请输入手机号', trigger: 'blur'},
+          {min: 7, max: 11, message: '长度在 7到 11个字符', trigger: 'blur'},
+          { validator: checkMoblie, trigger: 'blur' }
+        ]
+      },
+
     }
   },
   created() {
@@ -97,28 +175,49 @@ export default {
       this.total = res.data.total
     },
     //监听pagesize改变事件
-    handleSizeChange (newPage){
+    handleSizeChange(newPage) {
       console.log(newPage)
-      this.queryInfo.pagesize=newPage
+      this.queryInfo.pagesize = newPage
       this.getUsersList()
     },
     // 监听页数改变
-    handleCurrentChange (new1){
+    handleCurrentChange(new1) {
       console.log(new1)
-      this.queryInfo.pagenum=new1
+      this.queryInfo.pagenum = new1
       this.getUsersList()
     },
     //修改用户状态
-    async userStsteChange (newState){
-      const {data:res}=await this.$http.put(`users/${newState.id}
+    async userStsteChange(newState) {
+      const {data: res} = await this.$http.put(`users/${newState.id}
       /state/${newState.mg_state}`)
-      if (res.meta.status!==200){
-        newState.mg_state=!newState.mg_state
+      if (res.meta.status !== 200) {
+        newState.mg_state = !newState.mg_state
         return this.$message.error('设置失败')
-      }else {
+      } else {
         this.$message.success('设置成功')
       }
-
+    },
+    //对话框去掉是清空输入内容
+    addDialogClose (){
+      this.$refs.addFormRef.resetFields()
+    },
+    //添加用户
+    addUser (){
+      this.$refs.addFormRef.validate(async valid=>{
+        if (!valid) return
+        //预验证成功之后就可以开始发起请求了
+        const {data:res}=await this.$http.post('users',this.addForm)
+        console.log(res)
+        if (res.meta.status!==201) {
+          this.$message.error('添加失败')
+        }else {
+          this.$message.success('添加成功')
+          //隐藏对话框
+          this.addDialogVisible=false
+          //更新数据
+          this.getUsersList()
+        }
+      })
     }
   }
 }
