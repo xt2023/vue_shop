@@ -53,7 +53,8 @@
               type="primary">
             </el-button>
             <!--            删除按钮-->
-            <el-button icon="el-icon-delete" size="small" type="danger"></el-button>
+            <el-button icon="el-icon-delete" size="small" type="danger"
+            @click="removeUserById(scope.row.id)"></el-button>
             <!--            分配按钮-->
             <el-tooltip :enterable="false" content="分配角色" effect="dark" placement="top">
               <el-button icon="el-icon-setting" size="small" type="warning"></el-button>
@@ -295,6 +296,29 @@ export default {
         this.$message.success('修改用户成功')
 
       })
+    },
+    //根据id删除用户
+    removeUserById (id){
+      this.$confirm('此操作将永久删除该用户, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(async () => {
+        const {data:res} =await this.$http.delete(`users/${id}`)
+        console.log(res)
+        if (res.meta.status!==200) return this.$message.error('删除失败')
+        this.$message({
+          type: 'success',
+          message: '删除成功!'
+        });
+        this.getUsersList()
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消删除'
+        });
+      });
+
     }
   }
 
