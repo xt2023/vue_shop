@@ -5,6 +5,7 @@
       <el-breadcrumb-item :to="{ path: '/home' }">首页</el-breadcrumb-item>
       <el-breadcrumb-item>用户管理</el-breadcrumb-item>
       <el-breadcrumb-item>用户列表</el-breadcrumb-item>
+
     </el-breadcrumb>
 
     <!--      卡片区域-->
@@ -34,7 +35,7 @@
         <el-table-column label="邮箱" prop="email"></el-table-column>
         <el-table-column label="角色" prop="role_name"></el-table-column>
         <el-table-column label="状态" prop="mg_state">
-          <template slot-scope="scope">
+          <template v-slot="scope">
             <el-switch
               v-model="scope.row.mg_state"
               @change="userStsteChange(scope.row)">
@@ -43,7 +44,7 @@
         </el-table-column>
         <!--        操作部分-->
         <el-table-column class="table-column-last" label="操作">
-          <template slot-scope="scope">
+          <template v-slot="scope">
             <!--            修改按钮-->
             <el-button
              @click="ShowEditVisible(scope.row.id)"
@@ -56,7 +57,7 @@
             @click="removeUserById(scope.row.id)"></el-button>
             <!--            分配按钮-->
             <el-tooltip :enterable="false" content="分配角色" effect="dark" placement="top">
-              <el-button icon="el-icon-setting" size="small" type="warning"></el-button>
+              <el-button icon="el-icon-setting" size="small" type="warning" @click="showXGDiglog(scope.row)"></el-button>
             </el-tooltip>
           </template>
         </el-table-column>
@@ -120,6 +121,31 @@
       <span slot="footer" class="dialog-footer">
     <el-button @click="editDialogVisible = false">取 消</el-button>
     <el-button type="primary" @click="editUserInfo">确 定</el-button>
+  </span>
+    </el-dialog>
+<!--    分配用户对话框-->
+    <el-dialog
+      title="提示"
+      :visible.sync="editRolesVisible"
+      @close="setDialogVisibleClosed"
+      width="50%">
+     <div>
+       <p>当前用户: {{userInfo.username}}</p>
+       <p>当前角色: {{userInfo.role_name}}</p>
+       <p>
+         <el-select v-model="rolesValue" placeholder="请选择">
+           <el-option
+             v-for="item in rolesList"
+             :key="item.id"
+             :label="item.roleName"
+             :value="item.id">
+           </el-option>
+         </el-select>
+       </p>
+     </div>
+      <span slot="footer" class="dialog-footer">
+    <el-button @click="editRolesVisible = false">取 消</el-button>
+    <el-button type="primary" @click="saveRoleInfo">确 定</el-button>
   </span>
     </el-dialog>
   </div>
@@ -203,7 +229,15 @@ export default {
           {min: 7, max: 11, message: '长度在 7到 11个字符', trigger: 'blur'},
           { validator: checkMoblie, trigger: 'blur' }
         ]
-      }
+      },
+      //控制分配用户对话框显示与隐藏
+      editRolesVisible:false,
+      //每一行的用户数据
+      userInfo:{},
+      //角色列表数据
+      rolesList:[],
+      //分配角色下拉菜单的双向绑定
+      rolesValue:''
     }
   },
   created() {
@@ -318,8 +352,32 @@ export default {
         });
       });
 
+    },
+    //显示分配用户对话框函数
+    async showXGDiglog (userInfo){
+      this.userInfo=userInfo
+      //在展示对话框之前获取所有角色列表
+      const {data:res}=await this.$http.get('roles')
+      if (res.meta.status!==200) return this.$message.error('获取失败')
+     this.rolesList=res.data
+      this.editRolesVisible=true
+    },
+    //点击按钮，分配角色
+    async saveRoleInfo () {
+      const {data:res}=await this.$http.put(`users/${this.userInfo.id}/role`,{rid:this.rolesValue})
+      console.log(res)
+      if (res.meta.status!==200) return this.$message.error('错误')
+      this.$message.success('成功')
+      this.getUsersList()
+      this.editRolesVisible=false
+    },
+    //监听分配对话框的关闭
+    setDialogVisibleClosed(){
+      this.rolesValue=''
+      this.userInfo=''
     }
   }
+
 
 
 }
