@@ -166,12 +166,9 @@ export default {
     async getParentCateList (){
       const {data:res}= await this.$http.get('categories',{params:{type:2}})
       if (res.meta.status!==200) return this.$message.error('获取失败')
-      console.log(res)
       this.ParetCateList=res.data
     },
-    handleChange (){
-      console.log(this.selectKeys)
-    }
+
 
   }
 }
