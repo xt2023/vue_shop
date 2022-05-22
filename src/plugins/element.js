@@ -28,7 +28,8 @@ import { Button,
         Dialog,
         MessageBox,
         Tag,
-        Tree
+        Tree,
+        Cascader
         } from 'element-ui'
 
 Vue.use(Button)
@@ -58,6 +59,7 @@ Vue.use(Pagination)
 Vue.use(Dialog)
 Vue.use(Tag)
 Vue.use(Tree)
+Vue.use(Cascader)
 
 
 Vue.prototype.$message=Message
